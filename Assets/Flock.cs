@@ -6,6 +6,8 @@ public class Flock : MonoBehaviour
 {
     private float speed;
 
+    private bool turning;
+
     public FlockManager myManager;
 
 
@@ -18,7 +20,43 @@ public class Flock : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        ApplyRules();
+        Bounds b = new(myManager.transform.position, myManager.swimLimits * 2);
+        RaycastHit hit = new();
+        Vector3 direction = Vector3.zero;
+
+        if (!b.Contains(transform.position))
+        {
+            turning = true;
+            direction = myManager.transform.position - transform.position;
+        }
+        else if(Physics.Raycast(transform.position,transform.forward * 50,out hit))
+        {
+            turning = true;
+            direction = Vector3.Reflect(transform.forward, hit.normal);
+        }
+        else
+        {
+            turning = false;    
+        }
+
+        if (turning)
+        {
+            
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction), myManager.rotationSpeed * Time.deltaTime);
+        }
+        else
+        {
+            if (Random.Range(0, 100) < 10)
+            {
+                speed = Random.Range(myManager.minSpeed, myManager.maxSpeed);
+            }
+
+            if (Random.Range(0, 100) < 20)
+            {
+                ApplyRules();
+            }
+        }
+
         transform.Translate(0, 0, Time.deltaTime * speed);
     }
 
@@ -57,7 +95,7 @@ public class Flock : MonoBehaviour
 
         if(groupSize > 0)
         {
-            vcentre = vcentre / groupSize;
+            vcentre = vcentre / groupSize + (myManager.goalPos - transform.position);
             speed = gSpeed / groupSize;
 
             Vector3 direction = (vcentre + vavoid) - transform.position;
